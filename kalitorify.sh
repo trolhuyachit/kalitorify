@@ -315,17 +315,19 @@ check_ip() {
 
 ## Check status of program and services
 #
-# - tor.service
+# - Tor service
 # - tor settings (check if Tor works correctly)
 # - public IP Address
 check_status() {
     info "Check current status of Tor service"
 
-    if systemctl is-active tor.service >/dev/null 2>&1; then
-        msg "Tor service is active"
+    TorTestResult=$(service tor status 2>&1)
+    if [ "$TorTestResult" = "tor is running." ]; then
+       echo "Tor service is active"
     else
-        die "Tor service is not running! exit"
+       die "Tor service not runnig. Start tor first. Exit."
     fi
+
 
     # make an HTTP request with curl at: https://check.torproject.org/
     # and grep the necessary strings from the HTML page to test connection
@@ -354,8 +356,9 @@ check_status() {
 start() {
     check_root
 
-    # Exit if tor.service is already active
-    if systemctl is-active tor.service >/dev/null 2>&1; then
+    # Exit if Tor service is already active
+    TorTestResult=$(service tor status 2>&1)
+    if [ "$TorTestResult" = "tor is running." ]; then    
         die "Tor service is already active, stop it first"
     fi
 
@@ -371,10 +374,11 @@ start() {
     sysctl -w net.ipv6.conf.all.disable_ipv6=1 >/dev/null 2>&1
     sysctl -w net.ipv6.conf.default.disable_ipv6=1 >/dev/null 2>&1
 
-    # start tor.service
+    # start Tor service
     printf "%s\\n" "Start Tor service"
 
-    if ! systemctl start tor.service >/dev/null 2>&1; then
+    TorStartResult=$(service tor start 2>&1)
+    if [ "$TorStartResult" != "Starting tor daemon...done." ]; then    
         die "can't start tor service, exit!"
     fi
 
@@ -396,15 +400,16 @@ start() {
 stop() {
     check_root
 
-    # don't run function if tor.service is NOT running!
-    if systemctl is-active tor.service >/dev/null 2>&1; then
+    # don't run function if Tor service is NOT running!
+    TorTestResult=$(service tor status 2>&1)
+    if [ "$TorTestResult" = "tor is running." ]; then
         info "Stopping Transparent Proxy"
 
         # resets default iptables rules
         setup_iptables default
 
         printf "%s\\n" "Stop tor service"
-        systemctl stop tor.service
+        service tor stop
 
         # restore /etc/resolv.conf:
         #
@@ -437,15 +442,16 @@ stop() {
 
 ## Restart
 #
-# restart tor.service (i.e. get new Tor exit node)
+# restart Tor service (i.e. get new Tor exit node)
 # and change public IP Address
 restart() {
     check_root
 
-    if systemctl is-active tor.service >/dev/null 2>&1; then
+    TorTestResult=$(service tor status 2>&1)
+    if [ "$TorTestResult" = "tor is running." ]; then
         info "Change IP address"
 
-        systemctl restart tor.service
+        service tor restart
         sleep 1
         check_ip
         exit 0
