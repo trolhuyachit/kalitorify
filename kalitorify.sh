@@ -315,19 +315,18 @@ check_ip() {
 
 ## Check status of program and services
 #
-# - Tor service
+# - tor service
 # - tor settings (check if Tor works correctly)
 # - public IP Address
 check_status() {
     info "Check current status of Tor service"
 
-    TorTestResult=$(service tor status 2>&1)
-    if [ "$TorTestResult" = "tor is running." ]; then
+    TorStatusResult=$(service tor status 2>&1)
+    if [ "$TorStatusResult" = "tor is running." ]; then
        echo "Tor service is active"
     else
-       die "Tor service not runnig. Start tor first. Exit."
+       die "Tor service is not runnig. Exit."
     fi
-
 
     # make an HTTP request with curl at: https://check.torproject.org/
     # and grep the necessary strings from the HTML page to test connection
@@ -357,8 +356,8 @@ start() {
     check_root
 
     # Exit if Tor service is already active
-    TorTestResult=$(service tor status 2>&1)
-    if [ "$TorTestResult" = "tor is running." ]; then    
+    TorStatusResult=$(service tor status 2>&1)
+    if [ "$TorStatusResult" = "tor is running." ]; then    
         die "Tor service is already active, stop it first"
     fi
 
@@ -374,7 +373,7 @@ start() {
     sysctl -w net.ipv6.conf.all.disable_ipv6=1 >/dev/null 2>&1
     sysctl -w net.ipv6.conf.default.disable_ipv6=1 >/dev/null 2>&1
 
-    # start Tor service
+    # start tor service
     printf "%s\\n" "Start Tor service"
 
     TorStartResult=$(service tor start 2>&1)
@@ -400,9 +399,9 @@ start() {
 stop() {
     check_root
 
-    # don't run function if Tor service is NOT running!
-    TorTestResult=$(service tor status 2>&1)
-    if [ "$TorTestResult" = "tor is running." ]; then
+    # don't run function if tor service is NOT running!
+    TorStatusResult=$(service tor status 2>&1)
+    if [ "$TorStatusResult" = "tor is running." ]; then
         info "Stopping Transparent Proxy"
 
         # resets default iptables rules
@@ -442,13 +441,13 @@ stop() {
 
 ## Restart
 #
-# restart Tor service (i.e. get new Tor exit node)
+# restart tor service (i.e. get new Tor exit node)
 # and change public IP Address
 restart() {
     check_root
 
-    TorTestResult=$(service tor status 2>&1)
-    if [ "$TorTestResult" = "tor is running." ]; then
+    TorStatusResult=$(service tor status 2>&1)
+    if [ "$TorStatusResult" = "tor is running." ]; then
         info "Change IP address"
 
         service tor restart
@@ -532,4 +531,3 @@ main() {
 
 # Call main
 main "${@}"
-
